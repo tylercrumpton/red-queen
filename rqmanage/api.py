@@ -1,8 +1,14 @@
 from flask import Flask, make_response, jsonify, request
+from pymongo import MongoClient
 
 RQ_VERSION = "v0.1.0"
-app = Flask(__name__)
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
 
+app = Flask(__name__)
+client = MongoClient(MONGO_HOST, MONGO_PORT)
+db = client.rq
+manage_collection = db.management
 
 def get_owner(key):
     return "tylercrumpton"
@@ -20,18 +26,18 @@ def create_key():
     if 'owner_email' not in request.json:
         return make_response(jsonify({'error': 'No owner_email given'}), 400)
 
-    # TODO: Generate real id number
-    # TODO: Add key to DB
     # TODO: Generate real key
     # TODO: Email key info to owner
 
     key = {
-        'id': 1,
         'owner_name': request.json['owner_name'],
         'owner_email': request.json['owner_email'],
         'key': '1234',
+        'permissions': [],
     }
+    key_id = manage_collection.insert_one(key).inserted_id
 
+    key["_id"] = str(key_id)
     return jsonify({'key': key}), 201
 
 @app.route('/api/v1.0/keys/<int:key_id>/permissions', methods=['GET'])
@@ -40,7 +46,7 @@ def get_key_permissions(key_id):
     # TODO: Get real key permission list from DB
 
     key = {
-        'id': key_id,
+        '_id': key_id,
         'owner_name': 'owner_name',
         'owner_email': 'owner_email',
         'permissions': ["perm1", "perm2"]
@@ -62,7 +68,7 @@ def create_endpoint():
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
-        'id': 1,
+        '_id': 1,
         'endpoint_name': request.json['endpoint_name'],
         'owner_name': get_owner(request.json['key']),
         'description': request.json.get('description', ''),
@@ -87,7 +93,7 @@ def send_message():
     # TODO: Send message to correct queue
 
     message = {
-        'id': 1,
+        '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
         'sender': get_owner(request.json['key']),
         'data': request.json['data'],
@@ -109,7 +115,7 @@ def request_permission():
     # TODO: Send email to endpoint owner
 
     perm_request = {
-        'id': 1,
+        '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
         'requester': get_owner(request.json['key']),
         'message': request.json.get('data', ''),
@@ -134,7 +140,7 @@ def update_permission(request_id):
     # TODO: Add endpoint to key's list of permissions in DB
 
     perm_request = {
-        'id': request_id,
+        '_id': request_id,
         'target_endpoint': "target",
         'endpoint_owner': get_owner(request.json['key']),
         'requester': "bob",
