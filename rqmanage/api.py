@@ -1,5 +1,6 @@
-from flask import Flask, make_response, jsonify, request
+from flask import Flask, make_response, jsonify, request, abort
 from pymongo import MongoClient
+from bson.objectid import ObjectId, InvalidId
 
 RQ_VERSION = "v0.1.0"
 MONGO_HOST = 'localhost'
@@ -40,17 +41,24 @@ def create_key():
     key["_id"] = str(key_id)
     return jsonify({'key': key}), 201
 
-@app.route('/api/v1.0/keys/<int:key_id>/permissions', methods=['GET'])
+@app.route('/api/v1.0/keys/<string:key_id>', methods=['GET'])
 def get_key_permissions(key_id):
 
-    # TODO: Get real key permission list from DB
+    # Convert _id string to ObjectId:
+    try:
+        key_object_id = ObjectId(key_id)
+    except InvalidId:
+        return make_response(jsonify({'error': 'Invalid Id, must be a 24-character hex string'}), 400)
 
-    key = {
-        '_id': key_id,
-        'owner_name': 'owner_name',
-        'owner_email': 'owner_email',
-        'permissions': ["perm1", "perm2"]
-    }
+    key = manage_collection.find_one({'_id': key_object_id})
+    if key is None:
+        abort(404)
+
+    # Yank out the actual key value itself:
+    key.pop("key", None)
+
+    # Stringify the _id:
+    key["_id"] = str(key["_id"])
 
     return jsonify({'key': key}), 201
 
