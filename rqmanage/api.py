@@ -23,12 +23,27 @@ def create_key():
     # TODO: Generate real id number
     # TODO: Add key to DB
     # TODO: Generate real key
+    # TODO: Email key info to owner
 
     key = {
         'id': 1,
         'owner_name': request.json['owner_name'],
         'owner_email': request.json['owner_email'],
         'key': '1234',
+    }
+
+    return jsonify({'key': key}), 201
+
+@app.route('/api/v1.0/keys/<int:key_id>/permissions', methods=['GET'])
+def get_key_permissions(key_id):
+
+    # TODO: Get real key permission list from DB
+
+    key = {
+        'id': key_id,
+        'owner_name': 'owner_name',
+        'owner_email': 'owner_email',
+        'permissions': ["perm1", "perm2"]
     }
 
     return jsonify({'key': key}), 201
