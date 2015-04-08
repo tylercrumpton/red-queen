@@ -102,6 +102,33 @@ def request_permission():
 
     return jsonify({'request': perm_request}), 201
 
+@app.route('/api/v1.0/permissions/requests/<int:request_id>', methods=['PUT'])
+def update_permission(request_id):
+    if not request.json:
+        return make_response(jsonify({'error': 'No request body given'}), 400)
+    if 'accept' not in request.json:
+        return make_response(jsonify({'error': 'No accept given'}), 400)
+    if type(request.json['accept']) is not bool:
+        return make_response(jsonify({'error': 'accept is not a bool'}), 400)
+    if 'key' not in request.json:
+        return make_response(jsonify({'error': 'No key given'}), 400)
+
+    # TODO: Update request in DB
+    # TODO: Send email to request sender
+    # TODO: Retrieve actual request from DB
+    # TODO: Add endpoint to key's list of permissions in DB
+
+    perm_request = {
+        'id': request_id,
+        'target_endpoint': "target",
+        'endpoint_owner': get_owner(request.json['key']),
+        'requester': "bob",
+        'message': "my request",
+        "accepted": request.json['accept'],
+    }
+
+    return jsonify({'request': perm_request}), 201
+
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
