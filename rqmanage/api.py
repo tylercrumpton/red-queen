@@ -76,16 +76,16 @@ def create_endpoint():
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
-    # TODO: Generate real id number
-    # TODO: Add endpoint to DB
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
-        '_id': 1,
         'endpoint_name': request.json['endpoint_name'],
         'owner_name': get_owner(request.json['key']),
         'description': request.json.get('description', ''),
     }
+
+    endpoint_id = endpoint_collection.insert_one(endpoint).inserted_id
+    endpoint["_id"] = str(endpoint_id)
 
     logger.info("New endpoint created by {name}: {endpoint}".format(name=endpoint["owner_name"],
                                                                     endpoint=endpoint["endpoint_name"]))
