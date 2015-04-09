@@ -55,21 +55,12 @@ def create_key():
     logger.info("New key created for {name}: {key}".format(name=key["owner_name"], key=keystring))
     return jsonify({'key': key}), 201
 
-@manage_api.route('/api/v1.0/keys/<string:key_id>', methods=['GET'])
-def get_key_permissions(key_id):
+@manage_api.route('/api/v1.0/keys/<string:key_string>', methods=['GET'])
+def get_key_permissions(key_string):
 
-    # Convert _id string to ObjectId:
-    try:
-        key_object_id = ObjectId(key_id)
-    except InvalidId:
-        return make_response(jsonify({'error': 'Invalid Id, must be a 24-character hex string'}), 400)
-
-    key = key_collection.find_one({'_id': key_object_id})
+    key = key_collection.find_one({'key': key_string})
     if key is None:
         abort(404)
-
-    # Yank out the actual key value itself:
-    key.pop("key", None)
 
     # Stringify the _id:
     key["_id"] = str(key["_id"])
