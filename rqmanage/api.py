@@ -145,17 +145,18 @@ def request_permission():
     if requester_id is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
 
-    # TODO: Generate real id number
-    # TODO: Add request to DB
     # TODO: Send email to endpoint owner
 
     perm_request = {
-        '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
         'requester_id': requester_id,
-        'message': request.json.get('data', ''),
+        'message': request.json.get('message', ''),
     }
+
+    request_id = request_collection.insert_one(perm_request).inserted_id
+    perm_request["_id"] = str(request_id)
     perm_request["requester_id"] = str(requester_id)
+
     logger.info("New request created for {endpoint}".format(endpoint=perm_request["target_endpoint"]))
 
     return jsonify({'request': perm_request}), 201
