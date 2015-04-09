@@ -80,17 +80,21 @@ def create_endpoint():
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
+    owner_id = get_owner(request.json['key'])
+    if owner_id is None:
+        return make_response(jsonify({'error': 'Key not valid'}), 400)
+
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
         'endpoint_name': request.json['endpoint_name'],
-        'owner_id': get_owner(request.json['key']),
+        'owner_id': owner_id,
         'description': request.json.get('description', ''),
     }
 
     endpoint_id = endpoint_collection.insert_one(endpoint).inserted_id
     endpoint["_id"] = str(endpoint_id)
-    endpoint["owner_id"] = str(endpoint["owner_id"])
+    endpoint["owner_id"] = str(owner_id)
 
     logger.info("New endpoint created: {endpoint}".format(endpoint=endpoint["endpoint_name"]))
     return jsonify({'endpoint': endpoint}), 201
@@ -106,6 +110,10 @@ def send_message():
     if 'data' not in request.json:
         return make_response(jsonify({'error': 'No data given'}), 400)
 
+    sender_id = get_owner(request.json['key'])
+    if sender_id is None:
+        return make_response(jsonify({'error': 'Key not valid'}), 400)
+
     # TODO: Generate real id number
     # TODO: Add message to DB
     # TODO: Validate key against endpoint
@@ -114,10 +122,11 @@ def send_message():
     message = {
         '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
-        'sender_id': get_owner(request.json['key']),
+        'sender_id': sender_id,
         'data': request.json['data'],
     }
-    message["sender_id"] = str(message["sender_id"])
+
+    message["sender_id"] = str(sender_id)
     logger.info("New message posted to {endpoint}".format(endpoint=message["target_endpoint"]))
 
     return jsonify({'message': message}), 201
@@ -131,6 +140,10 @@ def request_permission():
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
+    requester_id = get_owner(request.json['key'])
+    if requester_id is None:
+        return make_response(jsonify({'error': 'Key not valid'}), 400)
+
     # TODO: Generate real id number
     # TODO: Add request to DB
     # TODO: Send email to endpoint owner
@@ -138,10 +151,10 @@ def request_permission():
     perm_request = {
         '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
-        'requester_id': get_owner(request.json['key']),
+        'requester_id': requester_id,
         'message': request.json.get('data', ''),
     }
-    perm_request["requester_id"] = str(perm_request["requester_id"])
+    perm_request["requester_id"] = str(requester_id)
     logger.info("New request created for {endpoint}".format(endpoint=perm_request["target_endpoint"]))
 
     return jsonify({'request': perm_request}), 201
@@ -157,6 +170,10 @@ def update_permission(request_id):
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
+    endpoint_owner_id = get_owner(request.json['key'])
+    if endpoint_owner_id is None:
+        return make_response(jsonify({'error': 'Key not valid'}), 400)
+
     # TODO: Update request in DB
     # TODO: Send email to request sender
     # TODO: Retrieve actual request from DB
@@ -165,12 +182,12 @@ def update_permission(request_id):
     perm_request = {
         '_id': request_id,
         'target_endpoint': "target",
-        'endpoint_owner_id': get_owner(request.json['key']),
+        'endpoint_owner_id': endpoint_owner_id,
         'requester': "bob",
         'message': "my request",
         "accepted": request.json['accept'],
     }
-    perm_request["endpoint_owner_id"] = str(perm_request["endpoint_owner_id"])
+    perm_request["endpoint_owner_id"] = str(endpoint_owner_id)
     return jsonify({'request': perm_request}), 201
 
 @manage_api.errorhandler(404)
