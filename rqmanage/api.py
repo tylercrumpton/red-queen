@@ -1,14 +1,16 @@
-from flask import Flask, make_response, jsonify, request, abort
+from flask import Blueprint, make_response, jsonify, request, abort
 from pymongo import MongoClient
 from bson.objectid import ObjectId, InvalidId
 import string
 import random
+import logging
 
+logger = logging.Logger(__name__)
 RQ_VERSION = "v0.1.0"
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 
-app = Flask(__name__)
+manage_api = Blueprint("manage_api", __name__)
 client = MongoClient(MONGO_HOST, MONGO_PORT)
 db = client.rq
 key_collection = db.keys
@@ -23,11 +25,11 @@ def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
 def get_owner(key):
     return "tylercrumpton"
 
-@app.route("/api/v1.0/version", methods=["GET"])
+@manage_api.route("/api/v1.0/version", methods=["GET"])
 def get_api_version():
     return jsonify({'version': RQ_VERSION})
 
-@app.route('/api/v1.0/keys', methods=['POST'])
+@manage_api.route('/api/v1.0/keys', methods=['POST'])
 def create_key():
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -36,7 +38,6 @@ def create_key():
     if 'owner_email' not in request.json:
         return make_response(jsonify({'error': 'No owner_email given'}), 400)
 
-    # TODO: Generate real key
     # TODO: Email key info to owner
 
     keystring = generate_key(20)
@@ -50,9 +51,11 @@ def create_key():
     key_id = key_collection.insert_one(key).inserted_id
 
     key["_id"] = str(key_id)
+
+    logger.info("New key created for {name}: {key}".format(name=key["owner_name"], key=keystring))
     return jsonify({'key': key}), 201
 
-@app.route('/api/v1.0/keys/<string:key_id>', methods=['GET'])
+@manage_api.route('/api/v1.0/keys/<string:key_id>', methods=['GET'])
 def get_key_permissions(key_id):
 
     # Convert _id string to ObjectId:
@@ -73,7 +76,7 @@ def get_key_permissions(key_id):
 
     return jsonify({'key': key}), 201
 
-@app.route('/api/v1.0/endpoints', methods=['POST'])
+@manage_api.route('/api/v1.0/endpoints', methods=['POST'])
 def create_endpoint():
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -93,9 +96,11 @@ def create_endpoint():
         'description': request.json.get('description', ''),
     }
 
+    logger.info("New endpoint created by {name}: {endpoint}".format(name=endpoint["owner_name"],
+                                                                    endpoint=endpoint["endpoint_name"]))
     return jsonify({'endpoint': endpoint}), 201
 
-@app.route('/api/v1.0/messages', methods=['POST'])
+@manage_api.route('/api/v1.0/messages', methods=['POST'])
 def send_message():
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -118,9 +123,12 @@ def send_message():
         'data': request.json['data'],
     }
 
+    logger.info("New message posted by {name} to {endpoint}".format(name=message["sender"],
+                                                                    endpoint=message["target_endpoint"]))
+
     return jsonify({'message': message}), 201
 
-@app.route('/api/v1.0/permissions/requests', methods=['POST'])
+@manage_api.route('/api/v1.0/permissions/requests', methods=['POST'])
 def request_permission():
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -140,9 +148,12 @@ def request_permission():
         'message': request.json.get('data', ''),
     }
 
+    logger.info("New request created by {name} for {endpoint}".format(name=perm_request["requester"],
+                                                                      endpoint=perm_request["target_endpoint"]))
+
     return jsonify({'request': perm_request}), 201
 
-@app.route('/api/v1.0/permissions/requests/<int:request_id>', methods=['PUT'])
+@manage_api.route('/api/v1.0/permissions/requests/<int:request_id>', methods=['PUT'])
 def update_permission(request_id):
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -169,9 +180,13 @@ def update_permission(request_id):
 
     return jsonify({'request': perm_request}), 201
 
-@app.errorhandler(404)
+@manage_api.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
 if __name__ == "__main__":
+    from flask import Flask
+    logging.basicConfig(level=logging.DEBUG)
+    app = Flask(__name__)
+    app.register_blueprint(manage_api)
     app.run(debug=True)
