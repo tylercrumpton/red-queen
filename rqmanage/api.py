@@ -15,7 +15,7 @@ client = MongoClient(MONGO_HOST, MONGO_PORT)
 db = client.rq
 key_collection = db.keys
 request_collection = db.requests
-endpoint_collection = db.enpoints
+endpoint_collection = db.endpoints
 message_collection = db.messages
 
 
