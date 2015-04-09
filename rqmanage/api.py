@@ -1,6 +1,8 @@
 from flask import Flask, make_response, jsonify, request, abort
 from pymongo import MongoClient
 from bson.objectid import ObjectId, InvalidId
+import string
+import random
 
 RQ_VERSION = "v0.1.0"
 MONGO_HOST = 'localhost'
@@ -9,7 +11,14 @@ MONGO_PORT = 27017
 app = Flask(__name__)
 client = MongoClient(MONGO_HOST, MONGO_PORT)
 db = client.rq
-manage_collection = db.management
+key_collection = db.keys
+request_collection = db.requests
+endpoint_collection = db.enpoints
+message_collection = db.messages
+
+
+def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 def get_owner(key):
     return "tylercrumpton"
@@ -30,13 +39,15 @@ def create_key():
     # TODO: Generate real key
     # TODO: Email key info to owner
 
+    keystring = generate_key(20)
+
     key = {
         'owner_name': request.json['owner_name'],
         'owner_email': request.json['owner_email'],
-        'key': '1234',
+        'key': keystring,
         'permissions': [],
     }
-    key_id = manage_collection.insert_one(key).inserted_id
+    key_id = key_collection.insert_one(key).inserted_id
 
     key["_id"] = str(key_id)
     return jsonify({'key': key}), 201
@@ -50,7 +61,7 @@ def get_key_permissions(key_id):
     except InvalidId:
         return make_response(jsonify({'error': 'Invalid Id, must be a 24-character hex string'}), 400)
 
-    key = manage_collection.find_one({'_id': key_object_id})
+    key = key_collection.find_one({'_id': key_object_id})
     if key is None:
         abort(404)
 
