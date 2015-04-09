@@ -114,8 +114,6 @@ def send_message():
     if sender_id is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
 
-    # TODO: Generate real id number
-    # TODO: Add message to DB
     # TODO: Validate key against endpoint
     # TODO: Send message to correct queue
 
@@ -126,7 +124,10 @@ def send_message():
         'data': request.json['data'],
     }
 
+    message_id = message_collection.insert_one(message).inserted_id
+    message["_id"] = str(message_id)
     message["sender_id"] = str(sender_id)
+
     logger.info("New message posted to {endpoint}".format(endpoint=message["target_endpoint"]))
 
     return jsonify({'message': message}), 201
