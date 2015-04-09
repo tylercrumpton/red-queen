@@ -22,8 +22,12 @@ message_collection = db.messages
 def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
-def get_owner(key):
-    return "tylercrumpton"
+def get_owner(key_string):
+    key = key_collection.find_one({'key': key_string})
+    if key is None:
+        return None
+    else:
+        return key["_id"]
 
 @manage_api.route("/api/v1.0/version", methods=["GET"])
 def get_api_version():
@@ -80,15 +84,15 @@ def create_endpoint():
 
     endpoint = {
         'endpoint_name': request.json['endpoint_name'],
-        'owner_name': get_owner(request.json['key']),
+        'owner_id': get_owner(request.json['key']),
         'description': request.json.get('description', ''),
     }
 
     endpoint_id = endpoint_collection.insert_one(endpoint).inserted_id
     endpoint["_id"] = str(endpoint_id)
+    endpoint["owner_id"] = str(endpoint["owner_id"])
 
-    logger.info("New endpoint created by {name}: {endpoint}".format(name=endpoint["owner_name"],
-                                                                    endpoint=endpoint["endpoint_name"]))
+    logger.info("New endpoint created: {endpoint}".format(endpoint=endpoint["endpoint_name"]))
     return jsonify({'endpoint': endpoint}), 201
 
 @manage_api.route('/api/v1.0/messages', methods=['POST'])
@@ -110,12 +114,11 @@ def send_message():
     message = {
         '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
-        'sender': get_owner(request.json['key']),
+        'sender_id': get_owner(request.json['key']),
         'data': request.json['data'],
     }
-
-    logger.info("New message posted by {name} to {endpoint}".format(name=message["sender"],
-                                                                    endpoint=message["target_endpoint"]))
+    message["sender_id"] = str(message["sender_id"])
+    logger.info("New message posted to {endpoint}".format(endpoint=message["target_endpoint"]))
 
     return jsonify({'message': message}), 201
 
@@ -135,12 +138,11 @@ def request_permission():
     perm_request = {
         '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
-        'requester': get_owner(request.json['key']),
+        'requester_id': get_owner(request.json['key']),
         'message': request.json.get('data', ''),
     }
-
-    logger.info("New request created by {name} for {endpoint}".format(name=perm_request["requester"],
-                                                                      endpoint=perm_request["target_endpoint"]))
+    perm_request["requester_id"] = str(perm_request["requester_id"])
+    logger.info("New request created for {endpoint}".format(endpoint=perm_request["target_endpoint"]))
 
     return jsonify({'request': perm_request}), 201
 
@@ -163,12 +165,12 @@ def update_permission(request_id):
     perm_request = {
         '_id': request_id,
         'target_endpoint': "target",
-        'endpoint_owner': get_owner(request.json['key']),
+        'endpoint_owner_id': get_owner(request.json['key']),
         'requester': "bob",
         'message': "my request",
         "accepted": request.json['accept'],
     }
-
+    perm_request["endpoint_owner_id"] = str(perm_request["endpoint_owner_id"])
     return jsonify({'request': perm_request}), 201
 
 @manage_api.errorhandler(404)
