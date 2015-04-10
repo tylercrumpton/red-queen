@@ -29,6 +29,13 @@ def get_owner(key_string):
     else:
         return key["_id"]
 
+def is_valid_endpoint_name(name):
+    # Make sure name only consists of letters, numbers, hyphens, and underscores:
+    if not re.match(r"^[\w-]+$", name):
+        return False
+    else:
+        return True
+
 @manage_api.route("/api/v1.0/version", methods=["GET"])
 def get_api_version():
     return jsonify({'version': RQ_VERSION})
@@ -77,6 +84,9 @@ def create_endpoint():
         return make_response(jsonify({'error': 'No request body given'}), 400)
     if 'endpoint_name' not in request.json:
         return make_response(jsonify({'error': 'No endpoint_name given'}), 400)
+    if not is_valid_endpoint_name(request.json['endpoint_name']):
+        return make_response(jsonify({'error': 'endpoint_name is not valid; must consist of letters, digits, hyphens, '
+                                               'and underscores'}), 400)
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
