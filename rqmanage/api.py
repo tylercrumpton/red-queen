@@ -160,6 +160,7 @@ def request_permission():
         'target_endpoint': request.json['target_endpoint'],
         'requester_id': requester_id,
         'message': request.json.get('message', ''),
+        'status': "pending",
     }
 
     request_id = request_collection.insert_one(perm_request).inserted_id
@@ -170,7 +171,7 @@ def request_permission():
 
     return jsonify({'request': perm_request}), 201
 
-@manage_api.route('/api/v1.0/permissions/requests/<int:request_id>', methods=['PUT'])
+@manage_api.route('/api/v1.0/permissions/requests/<string:request_id>', methods=['PUT'])
 def update_permission(request_id):
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
@@ -185,21 +186,26 @@ def update_permission(request_id):
     if endpoint_owner_id is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
 
-    # TODO: Update request in DB
+    # TODO: Check if key is valid for endpoint
     # TODO: Send email to request sender
-    # TODO: Retrieve actual request from DB
-    # TODO: Add endpoint to key's list of permissions in DB
+    # TODO: Add endpoint to requester's key's list of permissions in DB
 
-    perm_request = {
-        '_id': request_id,
-        'target_endpoint': "target",
-        'endpoint_owner_id': endpoint_owner_id,
-        'requester': "bob",
-        'message': "my request",
-        "accepted": request.json['accept'],
-    }
-    perm_request["endpoint_owner_id"] = str(endpoint_owner_id)
-    return jsonify({'request': perm_request}), 201
+    perm_request = request_collection.find_one({'_id': ObjectId(request_id)})
+    if perm_request is None:
+        return make_response(jsonify({'error': 'Permission request not found'}), 404)
+
+    if request.json['accept']:
+        status = "accepted"
+    else:
+        status = "denied"
+
+    request_collection.update({'_id': ObjectId(request_id)},
+        {
+            "$set": {'status': status}
+        }
+    )
+
+    return jsonify({'result': status}), 201
 
 @manage_api.errorhandler(404)
 def not_found(error):
