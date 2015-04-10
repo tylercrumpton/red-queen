@@ -128,7 +128,6 @@ def send_message():
     # TODO: Send message to correct queue
 
     message = {
-        '_id': 1,
         'target_endpoint': request.json['target_endpoint'],
         'sender_id': sender_id,
         'data': request.json['data'],
