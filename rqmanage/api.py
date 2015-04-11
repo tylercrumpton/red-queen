@@ -30,12 +30,12 @@ class KeyNotFoundError(Exception):
 def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
-def get_owner(key_string):
+def get_project_name(key_string):
     key = key_collection.find_one({'key': key_string})
     if key is None:
         return None
     else:
-        return key["_id"]
+        return key["project_name"]
 
 def is_valid_endpoint_name(name):
     # Make sure name only consists of letters, numbers, hyphens, and underscores:
@@ -63,7 +63,11 @@ def create_key():
         return make_response(jsonify({'error': 'No owner_name given'}), 400)
     if 'owner_email' not in request.json:
         return make_response(jsonify({'error': 'No owner_email given'}), 400)
-
+    if 'project_name' not in request.json:
+        return make_response(jsonify({'error': 'No project_name given'}), 400)
+    if not is_valid_endpoint_name(request.json["project_name"]):
+        return make_response(jsonify({'error': 'project_name is not valid; must consist of letters, digits, hyphens, '
+                                               'and underscores'}), 400)
     # TODO: Email key info to owner
 
     keystring = generate_key(20)
@@ -134,7 +138,7 @@ def send_message():
     if 'data' not in request.json:
         return make_response(jsonify({'error': 'No data given'}), 400)
 
-    sender_id = get_owner(request.json['key'])
+    sender_id = get_project_name(request.json['key'])
     if sender_id is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
 
@@ -164,22 +168,21 @@ def request_permission():
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
-    requester_id = get_owner(request.json['key'])
-    if requester_id is None:
+    requester_project_name = get_project_name(request.json['key'])
+    if requester_project_name is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
 
     # TODO: Send email to endpoint owner
 
     perm_request = {
         'target_endpoint': request.json['target_endpoint'],
-        'requester_id': requester_id,
+        'requester_project_name': requester_project_name,
         'message': request.json.get('message', ''),
         'status': "pending",
     }
 
     request_id = request_collection.insert_one(perm_request).inserted_id
     perm_request["_id"] = str(request_id)
-    perm_request["requester_id"] = str(requester_id)
 
     logger.info("New request created for {endpoint}".format(endpoint=perm_request["target_endpoint"]))
 
@@ -196,16 +199,15 @@ def update_permission(request_id):
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
 
-    endpoint_owner_id = get_owner(request.json['key'])
-    if endpoint_owner_id is None:
-        return make_response(jsonify({'error': 'Key not valid'}), 400)
-
-    # TODO: Check if key is valid for endpoint
     # TODO: Send email to request sender
 
     perm_request = request_collection.find_one({'_id': ObjectId(request_id)})
     if perm_request is None:
         return make_response(jsonify({'error': 'Permission request not found'}), 404)
+
+    key_project_name = get_project_name(request.json['key'])
+    if key_project_name is None or not key_project_name == perm_request['target_endpoint']:
+        return make_response(jsonify({'error': 'Key not valid'}), 400)
 
     if request.json['accept']:
         status = "accepted"
