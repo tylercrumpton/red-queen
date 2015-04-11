@@ -138,22 +138,22 @@ def send_message():
     if 'data' not in request.json:
         return make_response(jsonify({'error': 'No data given'}), 400)
 
-    sender_id = get_project_name(request.json['key'])
-    if sender_id is None:
+    key = key_collection.find_one({'key': request.json["key"]})
+    if key is None:
         return make_response(jsonify({'error': 'Key not valid'}), 400)
+    if request.json['target_endpoint'] not in key["permissions"]:
+        return make_response(jsonify({'error': 'Key does not have permissions for that endpoint'}), 400)
 
-    # TODO: Validate key against endpoint
     # TODO: Send message to correct queue
 
     message = {
         'target_endpoint': request.json['target_endpoint'],
-        'sender_id': sender_id,
+        'sender_project_name': key["project_name"],
         'data': request.json['data'],
     }
 
     message_id = message_collection.insert_one(message).inserted_id
     message["_id"] = str(message_id)
-    message["sender_id"] = str(sender_id)
 
     logger.info("New message posted to {endpoint}".format(endpoint=message["target_endpoint"]))
 
