@@ -4,6 +4,7 @@ from bson.objectid import ObjectId, InvalidId
 import string
 import random
 import logging
+import re
 
 logger = logging.Logger(__name__)
 RQ_VERSION = "v0.1.0"
