@@ -19,6 +19,13 @@ request_collection = db.requests
 endpoint_collection = db.endpoints
 message_collection = db.messages
 
+class EndpointNotFoundError(Exception):
+    def __init__(self):
+        pass
+
+class KeyNotFoundError(Exception):
+    def __init__(self):
+        pass
 
 def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -36,6 +43,13 @@ def is_valid_endpoint_name(name):
         return False
     else:
         return True
+
+def add_permission_to_key(endpoint_name, key):
+    if endpoint_collection.find_one({'endpoint_name': endpoint_name}) is None:
+        raise EndpointNotFoundError
+    if key_collection.find_one({'key': key}) is None:
+        raise KeyNotFoundError
+    key_collection.update({'key': key}, {"$addToSet": {'permissions': endpoint_name}})
 
 @manage_api.route("/api/v1.0/version", methods=["GET"])
 def get_api_version():
@@ -188,7 +202,6 @@ def update_permission(request_id):
 
     # TODO: Check if key is valid for endpoint
     # TODO: Send email to request sender
-    # TODO: Add endpoint to requester's key's list of permissions in DB
 
     perm_request = request_collection.find_one({'_id': ObjectId(request_id)})
     if perm_request is None:
@@ -196,14 +209,11 @@ def update_permission(request_id):
 
     if request.json['accept']:
         status = "accepted"
+        add_permission_to_key(perm_request["target_endpoint"], request.json['key'])
     else:
         status = "denied"
 
-    request_collection.update({'_id': ObjectId(request_id)},
-        {
-            "$set": {'status': status}
-        }
-    )
+    request_collection.update({'_id': ObjectId(request_id)}, {"$set": {'status': status}})
 
     return jsonify({'result': status}), 201
 
