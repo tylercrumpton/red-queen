@@ -110,8 +110,9 @@ def create_endpoint():
     if not is_valid_endpoint_name(request.json['endpoint_name']):
         return make_response(jsonify({'error': 'endpoint_name is not valid; must consist of letters, digits, hyphens, '
                                                'and underscores'}), 400)
-
-    # TODO: Check if endpoint name already exists
+    if endpoint_collection.find_one({"endpoint_name": request.json['endpoint_name']}) is not None:
+        return make_response(jsonify({'error': 'That endpoint_name already exists'}), 400)
+    
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
