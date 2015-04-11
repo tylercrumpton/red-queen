@@ -83,29 +83,28 @@ def get_key_permissions(key_string):
 def create_endpoint():
     if not request.json:
         return make_response(jsonify({'error': 'No request body given'}), 400)
+    if 'owner_name' not in request.json:
+        return make_response(jsonify({'error': 'No owner_name given'}), 400)
+    if 'owner_email' not in request.json:
+        return make_response(jsonify({'error': 'No owner_email given'}), 400)
     if 'endpoint_name' not in request.json:
         return make_response(jsonify({'error': 'No endpoint_name given'}), 400)
     if not is_valid_endpoint_name(request.json['endpoint_name']):
         return make_response(jsonify({'error': 'endpoint_name is not valid; must consist of letters, digits, hyphens, '
                                                'and underscores'}), 400)
-    if 'key' not in request.json:
-        return make_response(jsonify({'error': 'No key given'}), 400)
 
-    owner_id = get_owner(request.json['key'])
-    if owner_id is None:
-        return make_response(jsonify({'error': 'Key not valid'}), 400)
-
+    # TODO: Check if endpoint name already exists
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
         'endpoint_name': request.json['endpoint_name'],
-        'owner_id': owner_id,
+        'owner_name': request.json['owner_name'],
+        'owner_email': request.json['owner_email'],
         'description': request.json.get('description', ''),
     }
 
     endpoint_id = endpoint_collection.insert_one(endpoint).inserted_id
     endpoint["_id"] = str(endpoint_id)
-    endpoint["owner_id"] = str(owner_id)
 
     logger.info("New endpoint created: {endpoint}".format(endpoint=endpoint["endpoint_name"]))
     return jsonify({'endpoint': endpoint}), 201
