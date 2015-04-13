@@ -27,6 +27,10 @@ class KeyNotFoundError(Exception):
     def __init__(self):
         pass
 
+def send_message(target, data):
+    # TODO: Implement message sending
+    pass
+
 def generate_key(size=20, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
@@ -112,7 +116,7 @@ def create_endpoint():
                                                'and underscores'}), 400)
     if endpoint_collection.find_one({"endpoint_name": request.json['endpoint_name']}) is not None:
         return make_response(jsonify({'error': 'That endpoint_name already exists'}), 400)
-    
+
     # TODO: Create RabbitMQ queue for endpoint
 
     endpoint = {
@@ -145,7 +149,7 @@ def send_message():
     if request.json['target_endpoint'] not in key["permissions"]:
         return make_response(jsonify({'error': 'Key does not have permissions for that endpoint'}), 400)
 
-    # TODO: Send message to correct queue
+    send_message(request.json['target_endpoint'], request.json['data'])
 
     message = {
         'target_endpoint': request.json['target_endpoint'],
