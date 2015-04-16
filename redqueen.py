@@ -1,4 +1,4 @@
-from rqmanage.api import manage_api
+from rq.api import manage_api
 from flask import Flask
 import logging
 
