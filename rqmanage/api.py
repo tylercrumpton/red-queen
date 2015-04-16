@@ -140,6 +140,8 @@ def send_message():
         return make_response(jsonify({'error': 'No target_endpoint given'}), 400)
     if 'key' not in request.json:
         return make_response(jsonify({'error': 'No key given'}), 400)
+    if 'command' not in request.json:
+        return make_response(jsonify({'error': 'No command given'}), 400)
     if 'data' not in request.json:
         return make_response(jsonify({'error': 'No data given'}), 400)
 
@@ -154,13 +156,15 @@ def send_message():
     message = {
         'target_endpoint': request.json['target_endpoint'],
         'sender_project_name': key["project_name"],
+        'command': request.json['command'],
         'data': request.json['data'],
     }
 
     message_id = message_collection.insert_one(message).inserted_id
     message["_id"] = str(message_id)
 
-    logger.info("New message posted to {endpoint}".format(endpoint=message["target_endpoint"]))
+    logger.info("New message posted to {endpoint}.{command}".format(endpoint=message["target_endpoint"],
+                                                                    command=message["command"]))
 
     return jsonify({'message': message}), 201
 
