@@ -27,7 +27,7 @@ class KeyNotFoundError(Exception):
     def __init__(self):
         pass
 
-def send_message(target, data):
+def handle_message(target, data):
     # TODO: Implement message sending
     pass
 
@@ -149,7 +149,7 @@ def send_message():
     if request.json['target_endpoint'] not in key["permissions"]:
         return make_response(jsonify({'error': 'Key does not have permissions for that endpoint'}), 400)
 
-    send_message(request.json['target_endpoint'], request.json['data'])
+    handle_message(request.json['target_endpoint'], request.json['data'])
 
     message = {
         'target_endpoint': request.json['target_endpoint'],
