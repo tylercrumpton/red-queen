@@ -1,4 +1,5 @@
 from flask import Blueprint, make_response, jsonify, request, abort
+from flask.ext.socketio import SocketIO
 from pymongo import MongoClient
 from bson.objectid import ObjectId, InvalidId
 import string
@@ -12,6 +13,7 @@ MONGO_HOST = '10.0.0.1'
 MONGO_PORT = 27017
 
 manage_api = Blueprint("manage_api", __name__)
+socketio = SocketIO(manage_api)
 client = MongoClient(MONGO_HOST, MONGO_PORT)
 db = client.rq
 key_collection = db.keys
@@ -54,6 +56,18 @@ def add_permission_to_key(endpoint_name, key):
     if key_collection.find_one({'key': key}) is None:
         raise KeyNotFoundError
     key_collection.update({'key': key}, {"$addToSet": {'permissions': endpoint_name}})
+
+@socketio.on('connect')
+def socket_connect():
+    socketio.emit('connected')
+
+@socketio.on('disconnect')
+def socket_disconnect():
+    socketio.emit('disconnected')
+
+@socketio.on('return')
+def socket_disconnect():
+    socketio.emit('disconnected')
 
 @manage_api.route("/api/v1.0/version", methods=["GET"])
 def get_api_version():
