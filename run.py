@@ -1,9 +1,3 @@
-from app.api import manage_api
-from flask import Flask
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
-app = Flask(__name__)
-app.register_blueprint(manage_api)
-app.run(debug=True)
+# Run a test server:
+from app import app
+app.run(host='0.0.0.0', port=8080, debug=True)
