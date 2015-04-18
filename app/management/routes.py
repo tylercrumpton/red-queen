@@ -1,5 +1,4 @@
-from flask import Blueprint, request, render_template, \
-                  flash, g, session, redirect, url_for
+from flask import Blueprint, request, make_response
 from app.management.models import RqMessages, RqProjects, RqRequests
 from app import session
 from bson import json_util
@@ -13,8 +12,11 @@ def get_rq_version():
 
 @manage_api.route('/projects', methods=['POST'])
 def create_project():
-    project = RqProjects.make(request.json)
-    return json_util.dumps(project)
+    try:
+        project = RqProjects(request.json)
+    except KeyError as e:
+        return make_response(json_util.dumps({'error': 'No %s given' % e}))
+    return json_util.dumps(project.__dict__)
 
 @manage_api.route('/projects', methods=['GET'])
 def list_projects():
@@ -26,7 +28,11 @@ def get_project(name):
 
 @manage_api.route('/messages', methods=['POST'])
 def send_message():
-    pass
+    try:
+        message = RqMessages(request.json)
+    except KeyError as e:
+        return make_response(json_util.dumps({'error': 'No %s given' % e}))
+    return json_util.dumps(message.__dict__)
 
 @manage_api.route('/messages/<string:id>', methods=['GET'])
 def get_message():
@@ -34,7 +40,11 @@ def get_message():
 
 @manage_api.route('/requests', methods=['POST'])
 def create_request():
-    pass
+    try:
+        perm_request = RqRequests(request.json)
+    except KeyError as e:
+        return make_response(json_util.dumps({'error': 'No %s given' % e}))
+    return json_util.dumps(perm_request.__dict__)
 
 @manage_api.route('/permissions/requests/<string:id>', methods=['GET'])
 def get_request(id):
