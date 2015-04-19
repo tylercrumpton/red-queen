@@ -1,5 +1,7 @@
 from flask import Flask
-from ming import create_datastore, Session
+from app.management.routes import manage_api
+from pymongo import MongoClient
+
 # Define the WSGI application object:
 app = Flask(__name__)
 
@@ -8,11 +10,10 @@ app.config.from_object('config')
 
 # Connect to the DB:
 # TODO: Add this to config file
-bind = create_datastore('mongodb://10.0.0.1:27017', database="rq")
-session = Session(bind)
-
-# Import a module / component using its blueprint handler variable (mod_auth)
-from app.management.routes import manage_api
+MONGO_HOST = '10.0.0.1'
+MONGO_PORT = 27017
+client = MongoClient(MONGO_HOST, MONGO_PORT)
+db = client.rq
 
 # Register blueprint(s)
 app.register_blueprint(manage_api)
