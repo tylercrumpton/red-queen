@@ -23,7 +23,15 @@ def create_project():
 
 @manage_api.route('/projects', methods=['GET'])
 def list_projects():
-    pass
+    project_list = list(app.db.projects.find())
+    print type(project_list)
+
+    # Yank out emails and keys:
+    for project in project_list:
+        del project['key']
+        del project['owner']['email']
+
+    return json_util.dumps(project_list)
 
 @manage_api.route('/projects/<string:name>', methods=['GET'])
 def get_project(name):
