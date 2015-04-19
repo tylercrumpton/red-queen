@@ -1,7 +1,7 @@
 from flask import Blueprint, request, make_response
-from app.management.models import RqMessages, RqProjects, RqRequests
-from app import session
+from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotFoundError
 from bson import json_util
+import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
 
@@ -15,7 +15,8 @@ def create_project():
     try:
         project = RqProjects(request.json)
     except KeyError as e:
-        return make_response(json_util.dumps({'error': 'No %s given' % e}))
+        return make_response(json_util.dumps({'error': "No '%s' given" % e}))
+    app.db.projects.insert(project.__dict__)
     return json_util.dumps(project.__dict__)
 
 @manage_api.route('/projects', methods=['GET'])
