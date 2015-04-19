@@ -16,6 +16,8 @@ def create_project():
         project = RqProjects(request.json)
     except KeyError as e:
         return make_response(json_util.dumps({'error': "No '%s' given" % e}))
+    if app.db.projects.find_one({'name': project.name}) is not None:
+        return make_response(json_util.dumps({'error': "Project with name '%s' already exists" % project.name}))
     app.db.projects.insert(project.__dict__)
     return json_util.dumps(project.__dict__)
 
