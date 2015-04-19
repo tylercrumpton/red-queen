@@ -33,6 +33,17 @@ def send_message():
         message = RqMessages(request.json)
     except KeyError as e:
         return make_response(json_util.dumps({'error': 'No %s given' % e}))
+    except ApiKeyNotFoundError:
+        return make_response(json_util.dumps({'error': 'No project exists for that key'}))
+
+    dest_project = app.db.projects.find_one({'name': message.destination})
+    sender_project = app.db.projects.find_one({'name': message.sender})
+    if dest_project is None:
+        return make_response(json_util.dumps({'error': "Destination '%s' does not exist." % message.destination}))
+    elif dest_project['name'] not in sender_project['permissions']:
+        if message.destination != message.sender:
+            return make_response(json_util.dumps({'error': "Project '{}' does not have permissions for destination '{}'.".format(message.sender, message.destination)}))
+    app.db.messages.insert(message.__dict__)
     return json_util.dumps(message.__dict__)
 
 @manage_api.route('/messages/<string:id>', methods=['GET'])
