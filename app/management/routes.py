@@ -34,7 +34,16 @@ def list_projects():
 
 @manage_api.route('/projects/<string:name>', methods=['GET'])
 def get_project(name):
-    pass
+    project = app.db.projects.find_one({'name': name})
+
+    if project is None:
+        return make_response(json_util.dumps({'error': "Project with name '%s' does not exist" % name}))
+
+    # Yank out email and key:
+    del project['key']
+    del project['owner']['email']
+
+    return json_util.dumps(project)
 
 @manage_api.route('/messages', methods=['POST'])
 def send_message():
