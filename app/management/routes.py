@@ -1,6 +1,7 @@
 from flask import Blueprint, request, make_response
 from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotFoundError
 from bson import json_util
+from bson.objectid import ObjectId
 import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
@@ -64,9 +65,14 @@ def send_message():
     app.db.messages.insert(message.__dict__)
     return json_util.dumps(message.__dict__)
 
-@manage_api.route('/messages/<string:id>', methods=['GET'])
-def get_message():
-    pass
+@manage_api.route('/messages/<string:message_id>', methods=['GET'])
+def get_message(message_id):
+    message = app.db.messages.find_one({'_id': ObjectId(message_id)})
+
+    if message is None:
+        return make_response(json_util.dumps({'error': "Message with id '%s' does not exist" % message_id}))
+
+    return json_util.dumps(message)
 
 @manage_api.route('/requests', methods=['POST'])
 def create_request():
