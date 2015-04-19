@@ -55,7 +55,20 @@ def create_request():
     try:
         perm_request = RqRequests(request.json)
     except KeyError as e:
-        return make_response(json_util.dumps({'error': 'No %s given' % e}))
+        return make_response(json_util.dumps({'error': "No '%s' given" % e}))
+    except ApiKeyNotFoundError:
+        return make_response(json_util.dumps({'error': 'No project exists for that key'}))
+
+    dest_project = app.db.projects.find_one({'name': perm_request.destination})
+    sender_project = app.db.projects.find_one({'name': perm_request.sender})
+    if dest_project is None:
+        return make_response(json_util.dumps({'error': "Destination '%s' does not exist." % perm_request.destination}))
+    elif dest_project['name'] in sender_project['permissions']:
+        return make_response(json_util.dumps({'error': "Project '{}' already permissions for destination '{}'.".format(message.sender, message.destination)}))
+    elif perm_request.destination == perm_request.sender:
+        return make_response(json_util.dumps({'error': "Project cannot request permissions from itself"}))
+    app.db.requests.insert(perm_request.__dict__)
+
     return json_util.dumps(perm_request.__dict__)
 
 @manage_api.route('/permissions/requests/<string:id>', methods=['GET'])

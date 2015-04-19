@@ -45,5 +45,5 @@ class RqRequests(object):
         self.created = datetime.utcnow()
         self.responded = None
         self.sender = get_project_by_key(request_dict['key'])
-        self.target = request_dict['target']
+        self.destination = request_dict['destination']
         self.description = request_dict['description']
