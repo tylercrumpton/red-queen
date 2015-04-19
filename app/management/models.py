@@ -1,6 +1,7 @@
 import string
 import random
 from datetime import datetime
+import app
 
 def generate_key():
     size = 20
@@ -8,8 +9,15 @@ def generate_key():
     return ''.join(random.choice(chars) for _ in range(size))
 
 def get_project_by_key(key):
-    # TODO implement this search
-    return "projectname"
+    try:
+        project_name = app.db.projects.find_one({'key': key})['name']
+        return project_name
+    except:
+        raise ApiKeyNotFoundError
+
+class ApiKeyNotFoundError(Exception):
+    def __init__(self):
+        pass
 
 
 class RqProjects(object):
