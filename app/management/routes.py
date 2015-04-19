@@ -95,11 +95,16 @@ def create_request():
 
     return json_util.dumps(perm_request.__dict__)
 
-@manage_api.route('/permissions/requests/<string:id>', methods=['GET'])
-def get_request(id):
-    pass
+@manage_api.route('/requests/<string:request_id>', methods=['GET'])
+def get_request(request_id):
+    request = app.db.requests.find_one({'_id': ObjectId(request_id)})
 
-@manage_api.route('/permissions/requests/<string:id>', methods=['PUT'])
+    if request is None:
+        return make_response(json_util.dumps({'error': "Request with id '%s' does not exist" % request_id}))
+
+    return json_util.dumps(request)
+
+@manage_api.route('/requests/<string:id>', methods=['PUT'])
 def resolve_request(id):
     pass
 
