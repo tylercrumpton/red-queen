@@ -64,6 +64,9 @@ def send_message():
         if message.destination != message.sender:
             return make_response(json_util.dumps({'error': "Project '{}' does not have permissions for destination '{}'.".format(message.sender, message.destination)}))
     app.db.messages.insert(message.__dict__)
+
+    # TODO: Do something with the message
+
     return json_util.dumps(message.__dict__)
 
 @manage_api.route('/messages/<string:message_id>', methods=['GET'])
@@ -93,6 +96,8 @@ def create_request():
     elif perm_request.destination == perm_request.sender:
         return make_response(json_util.dumps({'error': "Project cannot request permissions from itself"}))
     app.db.requests.insert(perm_request.__dict__)
+
+    # TODO: Email requested destination project owner
 
     return json_util.dumps(perm_request.__dict__)
 
@@ -141,5 +146,8 @@ def resolve_request(request_id):
                                {'$set': {'status': status,
                                          'responded': responded}})
     updated_request = app.db.requests.find_one({'_id': ObjectId(request_id)})
+
+    # TODO: Email request sender
+
     return json_util.dumps(updated_request)
 
