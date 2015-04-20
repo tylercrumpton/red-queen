@@ -2,6 +2,7 @@ from flask import Blueprint, request, make_response
 from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotFoundError
 from bson import json_util
 from bson.objectid import ObjectId
+from datetime import datetime
 import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
@@ -104,9 +105,41 @@ def get_request(request_id):
 
     return json_util.dumps(perm_request)
 
-@manage_api.route('/requests/<string:id>', methods=['PUT'])
-def resolve_request(id):
-    pass
+@manage_api.route('/requests/<string:request_id>', methods=['PUT'])
+def resolve_request(request_id):
+    perm_request = app.db.requests.find_one({'_id': ObjectId(request_id)})
 
+    if perm_request is None:
+        return make_response(json_util.dumps({'error': "Request with id '%s' does not exist" % request_id}))
+    elif perm_request['status'] == 'accepted':
+        return make_response(json_util.dumps({'error': "Request with id '%s' has already been accepted" % request_id}))
+    elif perm_request['status'] == 'rejected':
+        return make_response(json_util.dumps({'error': "Request with id '%s' has already been rejected" % request_id}))
 
+    try:
+        project = app.db.projects.find_one({'key': request.json['key']})
+        accept = request.json['accept']
+    except KeyError as e:
+        return make_response(json_util.dumps({'error': "No '%s' given" % e}))
+
+    if project is None:
+        return make_response(json_util.dumps({'error': 'No project exists for that key'}))
+
+    if not project['name'] == perm_request['destination']:
+        return make_response(json_util.dumps({'error': "Project '{}' cannot accept request for project '{}".format(project["name"], perm_request['destination'])}))
+
+    if accept:
+        status = 'accepted'
+        # Add project to list of permissions:
+        app.db.projects.update_one({'name': perm_request['sender']},
+                                   {'$addToSet': {'permissions': perm_request['destination']}})
+    else:
+        status = 'rejected'
+    responded = datetime.utcnow()
+
+    app.db.requests.update_one({'_id': ObjectId(request_id)},
+                               {'$set': {'status': status,
+                                         'responded': responded}})
+    updated_request = app.db.requests.find_one({'_id': ObjectId(request_id)})
+    return json_util.dumps(updated_request)
 
