@@ -3,6 +3,7 @@ from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotF
 from bson import json_util
 from bson.objectid import ObjectId
 from datetime import datetime
+import requests
 import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
@@ -65,9 +66,16 @@ def send_message():
             return make_response(json_util.dumps({'error': "Project '{}' does not have permissions for destination '{}'.".format(message.sender, message.destination)}))
     app.db.messages.insert(message.__dict__)
 
-    # TODO: Do something with the message
+    payload = json_util.dumps(message.__dict__)
 
-    return json_util.dumps(message.__dict__)
+    # Send the message off to the destinations API(s):
+    for url in dest_project['urls']:
+        try:
+            r = requests.post(url, data=payload, timeout=1)
+        except:
+            print "Error posting to url."
+
+    return payload
 
 @manage_api.route('/messages/<string:message_id>', methods=['GET'])
 def get_message(message_id):
