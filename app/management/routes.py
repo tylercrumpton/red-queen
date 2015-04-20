@@ -89,7 +89,7 @@ def create_request():
     if dest_project is None:
         return make_response(json_util.dumps({'error': "Destination '%s' does not exist." % perm_request.destination}))
     elif dest_project['name'] in sender_project['permissions']:
-        return make_response(json_util.dumps({'error': "Project '{}' already permissions for destination '{}'.".format(message.sender, message.destination)}))
+        return make_response(json_util.dumps({'error': "Project '{}' already permissions for destination '{}'.".format(perm_request.sender, perm_request.destination)}))
     elif perm_request.destination == perm_request.sender:
         return make_response(json_util.dumps({'error': "Project cannot request permissions from itself"}))
     app.db.requests.insert(perm_request.__dict__)
