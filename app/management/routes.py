@@ -71,7 +71,8 @@ def send_message():
     # Send the message off to the destinations API(s):
     for url in dest_project['urls']:
         try:
-            r = requests.post(url, data=payload, timeout=1)
+            headers = {'Content-Type': 'application/json'}
+            r = requests.post(url, data=payload, timeout=1, headers=headers)
         except:
             print "Error posting to url."
 
