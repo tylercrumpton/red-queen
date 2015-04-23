@@ -2,7 +2,10 @@ import irc.bot
 import irc.strings
 from flask import Flask, request, jsonify
 import requests
-import threading
+from gevent import monkey
+from gevent.pywsgi import WSGIServer
+import gevent
+monkey.patch_all()
 
 class RQBot(irc.bot.SingleServerIRCBot):
     def __init__(self, channel, nick, server, port=6667):
@@ -44,11 +47,13 @@ def run_api():
 @app.route('/message', methods=['POST'])
 def receive_message():
     print request.json
+    bot.connection.privmsg("BLAH")
     return "OK"
 
 if __name__ == "__main__":
+    print "Logging into IRC..."
     bot = RQBot("#btctiptest", "PyRqBot", "chat.freenode.net", port=6667)
-    irc_thread = threading.Thread(target=bot.start)
-    api_thread = threading.Thread(target=run_api)
-    irc_thread.start()
-    api_thread.start()
+    gevent.spawn(bot.start)
+    print "Spinning up the API..."
+    api = WSGIServer(('', 9090), app)
+    api.serve_forever()
