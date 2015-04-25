@@ -56,6 +56,8 @@ def send_message():
         return make_response(json_util.dumps({'error': 'No %s given' % e}))
     except ApiKeyNotFoundError:
         return make_response(json_util.dumps({'error': 'No project exists for that key'}))
+    except TypeError:
+        return make_response(json_util.dumps({'error': 'Incorrect content-type'}))
 
     dest_project = app.db.projects.find_one({'name': message.destination})
     sender_project = app.db.projects.find_one({'name': message.sender})
