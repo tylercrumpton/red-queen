@@ -19,17 +19,17 @@ class RQBot(irc.bot.SingleServerIRCBot):
         connection.join(self.channel)
 
     def on_pubmsg(self, connection, event):
-        if event.arguments[0][0] == "!":
-            a = event.arguments[0].split(" ", 1)
-            command = a[0].lstrip("!").rstrip(' ')
-            arguments = None
-            if len(a) > 1:
-                arguments = a[1].strip()
-            self.handle_command(event, command, arguments)
+        command = event.arguments[0]
+        if command.lower().startswith("!rq"):
+            self.send_command(event, command)
         return
 
-    def handle_command(self, event, command, arguments):
-        print "{command}: {arguments}".format(command=command, arguments=arguments)
+    def send_command(self, event, command):
+        irc_message = {'type': event.type,
+                       'source': event.source,
+                       'target': event.target,
+                       'arguments': event.arguments}
+        print "'{command}' command detected in channel {chan}".format(command=command, chan=event.target)
 
 
 def send_message(destination, data, msg_type="event"):
