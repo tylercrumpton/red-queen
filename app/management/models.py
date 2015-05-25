@@ -30,10 +30,6 @@ class RqProjects(object):
         self.key = generate_key()
         self.permissions = list()
         self.description = request_dict['description']
-        if "urls" in request_dict.keys():
-            self.urls = list(request_dict['urls'])
-        else:
-            self.urls = list()
 
 class RqMessages(object):
     def __init__(self, request_dict):

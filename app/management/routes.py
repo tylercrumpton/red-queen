@@ -33,7 +33,6 @@ def list_projects():
     for project in project_list:
         del project['key']
         del project['owner']['email']
-        del project['urls']
 
     return json_util.dumps(project_list)
 
@@ -47,7 +46,6 @@ def get_project(name):
     # Yank out email and key:
     del project['key']
     del project['owner']['email']
-    del project['urls']
 
     return json_util.dumps(project)
 
