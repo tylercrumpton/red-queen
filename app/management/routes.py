@@ -4,7 +4,6 @@ from bson import json_util
 from bson.objectid import ObjectId
 from datetime import datetime
 import requests
-import time
 import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
