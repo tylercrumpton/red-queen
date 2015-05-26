@@ -67,17 +67,11 @@ def send_message():
     elif dest_project['name'] not in sender_project['permissions']:
         if message.destination != message.sender:
             return make_response(json_util.dumps({'error': "Project '{}' does not have permissions for destination '{}'.".format(message.sender, message.destination)}))
-    app.db.messages.insert(message.__dict__)
-
-    payload_dict = message.__dict__
-    payload_dict.pop("_id")
-    payload_dict.pop("created")
-    payload_dict["created"] = int(time.time())
-    payload = json_util.dumps(payload_dict)
 
     # Send the message off to the destinations API:
     try:
         headers = {'Content-Type': 'application/json'}
+        payload = json_util.dumps(message.__dict__)
         r = requests.post("{host}/{db}".format(host=app.COUCH_HOST, db=dest_project['name']), data=payload, timeout=1, headers=headers)
     except:
         print "Error sending message to CouchDB."

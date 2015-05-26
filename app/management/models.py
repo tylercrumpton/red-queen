@@ -1,6 +1,7 @@
 import string
 import random
 from datetime import datetime
+import time
 import app
 
 def generate_key():
@@ -34,7 +35,7 @@ class RqProjects(object):
 class RqMessages(object):
     def __init__(self, request_dict):
         self.type = request_dict['type']
-        self.created = datetime.utcnow()
+        self.created = int(time.time())
         self.sender = get_project_by_key(request_dict['key'])
         self.data = request_dict['data']
         self.destination = request_dict['destination']
