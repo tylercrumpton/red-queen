@@ -73,10 +73,9 @@ def send_message():
         headers = {'Content-Type': 'application/json'}
         payload = json_util.dumps(message.__dict__)
         r = requests.post("{host}/{db}".format(host=app.COUCH_HOST, db=dest_project['name']), data=payload, timeout=1, headers=headers)
+        return payload
     except:
-        print "Error sending message to CouchDB."
-
-    return payload
+        return make_response(json_util.dumps({'error': "Error sending message to CouchDB."}))
 
 @manage_api.route('/messages/<string:message_id>', methods=['GET'])
 def get_message(message_id):
