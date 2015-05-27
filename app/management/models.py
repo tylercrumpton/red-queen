@@ -24,7 +24,7 @@ class ApiKeyNotFoundError(Exception):
 class RqProjects(object):
     def __init__(self, request_dict):
         self.name = request_dict['name']
-        self.created = datetime.utcnow()
+        self.created = int(time.time())
         self.owner = dict(name=request_dict['owner']['name'],
                           email=request_dict['owner']['email'],
                           nick=request_dict['owner']['nick'])

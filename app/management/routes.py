@@ -24,9 +24,23 @@ def create_project():
         project = RqProjects(request.json)
     except KeyError as e:
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
-    if app.db.projects.find_one({'name': project.name}) is not None:
+    r = requests.put("{host}/{db}".format(host=app.COUCH_HOST, db=project.name), timeout=1)
+    if r.status_code == 412:
         return json_response(json_util.dumps({'error': "Project with name '%s' already exists" % project.name}))
-    app.db.projects.insert(project.__dict__)
+    elif r.status_code != 201:
+        return json_response(json_util.dumps({'error': "Error creating database"}))
+    permissions_dict = {
+        "admins": {"names": [], "roles": ["admins"]},
+        "members": {"names": [], "roles": []}
+    }
+    headers = {'Content-Type': 'application/json'}
+    r = requests.put("{host}/{db}/_security".format(host=app.COUCH_HOST, db=project.name), data=json_util.dumps(permissions_dict), timeout=1, headers=headers)
+    if r.status_code != 201 and r.status_code != 200:
+        return json_response(json_util.dumps({'error': "Error setting security permissions"}))
+    readonly_script = {"validate_doc_update":"function(newDoc, oldDoc, userCtx) {   if (userCtx.roles.indexOf('_admin') !== -1) {     return;   } else {     throw({forbidden: 'This DB is read-only'});   }   } "}
+    r = requests.put("{host}/{db}/_design/auth".format(host=app.COUCH_HOST, db=project.name), data=json_util.dumps(readonly_script), timeout=1, headers=headers)
+    if r.status_code != 201 and r.status_code != 200:
+        return json_response(json_util.dumps({'error': "Error updating readonly script"}))
     return json_response(json_util.dumps(project.__dict__))
 
 @manage_api.route('/projects', methods=['GET'])
