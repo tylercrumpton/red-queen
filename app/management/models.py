@@ -1,6 +1,5 @@
 import string
 import random
-from datetime import datetime
 import time
 import app
 
@@ -43,7 +42,7 @@ class RqMessages(object):
 class RqRequests(object):
     def __init__(self, request_dict):
         self.status = "pending"
-        self.created = datetime.utcnow()
+        self.created = int(time.time())
         self.responded = None
         self.sender = get_project_by_key(request_dict['key'])
         self.destination = request_dict['destination']
