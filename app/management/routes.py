@@ -3,7 +3,6 @@ from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotF
 from bson import json_util
 from bson.objectid import ObjectId
 from datetime import datetime
-import requests
 import app
 
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
@@ -24,23 +23,10 @@ def create_project():
         project = RqProjects(request.json)
     except KeyError as e:
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
-    r = requests.put("{host}/{db}".format(host=app.COUCH_HOST, db=project.name), timeout=1)
-    if r.status_code == 412:
-        return json_response(json_util.dumps({'error': "Project with name '%s' already exists" % project.name}))
-    elif r.status_code != 201:
-        return json_response(json_util.dumps({'error': "Error creating database"}))
-    permissions_dict = {
-        "admins": {"names": [], "roles": ["admins"]},
-        "members": {"names": [], "roles": []}
-    }
-    headers = {'Content-Type': 'application/json'}
-    r = requests.put("{host}/{db}/_security".format(host=app.COUCH_HOST, db=project.name), data=json_util.dumps(permissions_dict), timeout=1, headers=headers)
-    if r.status_code != 201 and r.status_code != 200:
-        return json_response(json_util.dumps({'error': "Error setting security permissions"}))
-    readonly_script = {"validate_doc_update":"function(newDoc, oldDoc, userCtx) {   if (userCtx.roles.indexOf('_admin') !== -1) {     return;   } else {     throw({forbidden: 'This DB is read-only'});   }   } "}
-    r = requests.put("{host}/{db}/_design/auth".format(host=app.COUCH_HOST, db=project.name), data=json_util.dumps(readonly_script), timeout=1, headers=headers)
-    if r.status_code != 201 and r.status_code != 200:
-        return json_response(json_util.dumps({'error': "Error updating readonly script"}))
+    try:
+        app.rq_db.create_project_db(project.name)
+    except Exception as e:
+        return json_response((json_util.dumps({'error': str(e)})))
     return json_response(json_util.dumps(project.__dict__))
 
 @manage_api.route('/projects', methods=['GET'])
@@ -88,10 +74,9 @@ def send_message():
 
     # Send the message off to the destinations API:
     try:
-        headers = {'Content-Type': 'application/json'}
-        payload = json_util.dumps(message.__dict__)
-        r = requests.post("{host}/{db}".format(host=app.COUCH_HOST, db=dest_project['name']), data=payload, timeout=1, headers=headers)
-        return json_response(payload)
+        message_json = json_util.dumps(message.__dict__)
+        app.rq_db.send_message(dest_project['name'], message_json)
+        return message_json
     except:
         return json_response(json_util.dumps({'error': "Error sending message to CouchDB."}))
 
