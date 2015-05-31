@@ -1,4 +1,6 @@
 import requests
+import couchdb
+
 from bson import json_util
 
 class RqDbAlreadyExistsError(Exception):
@@ -9,6 +11,8 @@ class RqDbCommunicationError(Exception):
 class RqDb(object):
     def __init__(self, db_host):
         self.db_host = db_host
+        self.couch_server = couchdb.Server(db_host)
+
 
     def send_message(self, message, destination):
         headers = {'Content-Type': 'application/json'}
@@ -16,12 +20,13 @@ class RqDb(object):
                              data=message, timeout=1, headers=headers)
 
     def create_project_db(self, project_name):
-        r = requests.put("{host}/{db}".format(host=self.db_host, db=project_name),
-                         timeout=5)
-        if r.status_code == 412:
-            raise RqDbAlreadyExistsError("Project with name '%s' already exists" % project_name)
-        elif r.status_code != 201:
-            raise RqDbCommunicationError("Error creating database")
+        self.couch_server.create(project_name)
+        #r = requests.put("{host}/{db}".format(host=self.db_host, db=project_name),
+        #                 timeout=5)
+        #if r.status_code == 412:
+        #    raise RqDbAlreadyExistsError("Project with name '%s' already exists" % project_name)
+        #elif r.status_code != 201:
+        #    raise RqDbCommunicationError("Error creating database")
 
         permissions_dict = {
             "admins": {"names": [], "roles": ["admins"]},
