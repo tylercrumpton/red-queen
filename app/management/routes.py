@@ -28,11 +28,12 @@ def create_project():
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
     try:
         app.rq_db.create_project_db(project.name)
+        app.rq_db.add_project_to_config(project)
     except RqDbAlreadyExistsError as e:
         return json_response((json_util.dumps({'error': str(e)})))
     except Exception as e:
-        logger.error(e)
-        return json_response((json_util.dumps({'error': "Unknown error occured while trying to created database"})))
+        logger.exception(e)
+        return json_response((json_util.dumps({'error': "Unknown error occurred while trying to create database"})))
     return json_response(json_util.dumps(project.__dict__))
 
 @manage_api.route('/projects', methods=['GET'])

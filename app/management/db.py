@@ -1,7 +1,7 @@
 import requests
 import couchdb
 import logging
-from bson import json_util
+from models import RqRequests, RqProjects, RqMessages
 
 class RqDbAlreadyExistsError(Exception):
     pass
@@ -26,7 +26,7 @@ class RqDb(object):
         except couchdb.PreconditionFailed:
             raise RqDbAlreadyExistsError("Project with name '%s' already exists" % project_name)
         except Exception as e:
-            self.logger.error(e)
+            self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while creating database")
 
         # Save the permissions document:
@@ -37,7 +37,7 @@ class RqDb(object):
         try:
             self.couch_server[project_name].security = permissions_doc
         except Exception as e:
-            self.logger.error(e)
+            self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while saving permissions to database")
 
         # Make the database read-only for un-authenticated users:
@@ -45,5 +45,12 @@ class RqDb(object):
         try:
             self.couch_server[project_name]["_design/auth"] = readonly_script
         except Exception as e:
-            self.logger.error(e)
-            raise RqDbCommunicationError("Unknown error while saving read-only scropt to database")
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error while saving read-only script to database")
+
+    def add_project_to_config(self, project):
+        try:
+            self.couch_server["rqconfig"].save(project.__dict__)
+        except Exception as e:
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error while saving project to config database")
