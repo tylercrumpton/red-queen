@@ -15,9 +15,11 @@ class RqDb(object):
         self.logger = logging.getLogger("RqDb")
 
     def send_message(self, message, destination):
-        headers = {'Content-Type': 'application/json'}
-        return requests.post("{host}/{db}".format(host=self.db_host, db=destination),
-                             data=message, timeout=1, headers=headers)
+        try:
+            self.couch_server[destination].save(message)
+        except Exception as e:
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error sending message")
 
     def create_project_db(self, project_name):
         # Create the project database:
