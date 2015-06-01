@@ -50,6 +50,7 @@ class RqDb(object):
 
     def add_project_to_config(self, project):
         try:
+            project.type = "project"
             self.couch_server["rqconfig"].save(project.__dict__)
         except Exception as e:
             self.logger.exception(e)
