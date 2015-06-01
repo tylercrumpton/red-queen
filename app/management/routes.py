@@ -3,8 +3,11 @@ from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotF
 from bson import json_util
 from bson.objectid import ObjectId
 from datetime import datetime
+from db import RqDbAlreadyExistsError, RqDbCommunicationError
 import app
+import logging
 
+logger = logging.getLogger(__name__)
 manage_api = Blueprint('manage', __name__, url_prefix='/api/v1.0')
 
 def json_response(response):
@@ -25,8 +28,11 @@ def create_project():
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
     try:
         app.rq_db.create_project_db(project.name)
-    except Exception as e:
+    except RqDbAlreadyExistsError as e:
         return json_response((json_util.dumps({'error': str(e)})))
+    except Exception as e:
+        logger.error(e)
+        return json_response((json_util.dumps({'error': "Unknown error occured while trying to created database"})))
     return json_response(json_util.dumps(project.__dict__))
 
 @manage_api.route('/projects', methods=['GET'])
