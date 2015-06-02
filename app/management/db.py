@@ -28,7 +28,7 @@ class RqDb(object):
         except IndexError:
             raise RqProjectDoesNotExistError("Project with that name does not exist.")
 
-    def send_message(self, message, destination):
+    def send_message(self, destination, message):
         try:
             self.couch_server[destination].save(message)
         except Exception as e:
