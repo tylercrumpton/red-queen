@@ -1,9 +1,9 @@
 from flask import Blueprint, request, make_response
-from app.management.models import RqMessages, RqProjects, RqRequests, ApiKeyNotFoundError
+from app.management.models import RqMessages, RqProjects, RqRequests
 from bson import json_util
 from bson.objectid import ObjectId
 from datetime import datetime
-from db import RqDbAlreadyExistsError, RqDbCommunicationError
+from db import RqDbAlreadyExistsError, RqDbCommunicationError, RqProjectDoesNotExistError
 import app
 import logging
 
@@ -66,24 +66,26 @@ def send_message():
         message = RqMessages(request.json)
     except KeyError as e:
         return json_response(json_util.dumps({'error': 'No %s given' % e}))
-    except ApiKeyNotFoundError:
+    except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': 'No project exists for that key'}))
     except TypeError:
         return json_response(json_util.dumps({'error': 'Incorrect content-type'}))
 
-    dest_project = app.db.projects.find_one({'name': message.destination})
-    sender_project = app.db.projects.find_one({'name': message.sender})
-    if dest_project is None:
+    try:
+        dest_project = app.rq_db.get_project_by_name(message.destination)
+    except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': "Destination '%s' does not exist." % message.destination}))
-    elif dest_project['name'] not in sender_project['permissions']:
+    sender_project = app.rq_db.get_project_by_name(message.sender)
+
+    if dest_project['name'] not in sender_project['permissions']:
         if message.destination != message.sender:
             return json_response(json_util.dumps({'error': "Project '{}' does not have permissions for destination '{}'.".format(message.sender, message.destination)}))
 
     # Send the message off to the destinations API:
     try:
-        message_json = json_util.dumps(message.__dict__)
+        message_json = message.__dict__
         app.rq_db.send_message(dest_project['name'], message_json)
-        return message_json
+        return json_response(json_util.dumps(message_json))
     except:
         return json_response(json_util.dumps({'error': "Error sending message to CouchDB."}))
 
@@ -102,7 +104,7 @@ def create_request():
         perm_request = RqRequests(request.json)
     except KeyError as e:
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
-    except ApiKeyNotFoundError:
+    except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': 'No project exists for that key'}))
 
     dest_project = app.db.projects.find_one({'name': perm_request.destination})
