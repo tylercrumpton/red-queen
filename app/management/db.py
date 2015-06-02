@@ -1,11 +1,11 @@
-import requests
 import couchdb
 import logging
-from models import RqRequests, RqProjects, RqMessages
 
 class RqDbAlreadyExistsError(Exception):
     pass
 class RqDbCommunicationError(Exception):
+    pass
+class RqProjectDoesNotExistError(Exception):
     pass
 
 class RqDb(object):
@@ -13,6 +13,20 @@ class RqDb(object):
         self.db_host = db_host
         self.couch_server = couchdb.Server(db_host)
         self.logger = logging.getLogger("RqDb")
+
+    def get_project_by_key(self, key):
+        view_result = self.couch_server['rqconfig'].view('doc/by_key', key=key)
+        try:
+            return list(view_result)[0].value
+        except IndexError:
+            raise RqProjectDoesNotExistError("Project with that key does not exist.")
+
+    def get_project_by_name(self, name):
+        view_result = self.couch_server['rqconfig'].view('doc/by_name', key=name)
+        try:
+            return list(view_result)[0].value
+        except IndexError:
+            raise RqProjectDoesNotExistError("Project with that name does not exist.")
 
     def send_message(self, message, destination):
         try:
