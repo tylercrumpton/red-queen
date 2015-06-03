@@ -28,41 +28,12 @@ class RqDb(object):
         except IndexError:
             raise RqProjectDoesNotExistError("Project with that name does not exist.")
 
-    def send_message(self, destination, message):
+    def send_message(self, message):
         try:
-            self.couch_server[destination].save(message)
+            self.couch_server['rqprojects'].save(message)
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error sending message")
-
-    def create_project_db(self, project_name):
-        # Create the project database:
-        try:
-            self.couch_server.create(project_name)
-        except couchdb.PreconditionFailed:
-            raise RqDbAlreadyExistsError("Project with name '%s' already exists" % project_name)
-        except Exception as e:
-            self.logger.exception(e)
-            raise RqDbCommunicationError("Unknown error while creating database")
-
-        # Save the permissions document:
-        permissions_doc = {
-            "admins": {"names": [], "roles": ["admins"]},
-            "members": {"names": [], "roles": []}
-        }
-        try:
-            self.couch_server[project_name].security = permissions_doc
-        except Exception as e:
-            self.logger.exception(e)
-            raise RqDbCommunicationError("Unknown error while saving permissions to database")
-
-        # Make the database read-only for un-authenticated users:
-        readonly_script = {"validate_doc_update":"function(newDoc, oldDoc, userCtx) {   if (userCtx.roles.indexOf('_admin') !== -1) {     return;   } else {     throw({forbidden: 'This DB is read-only'});   }   } "}
-        try:
-            self.couch_server[project_name]["_design/auth"] = readonly_script
-        except Exception as e:
-            self.logger.exception(e)
-            raise RqDbCommunicationError("Unknown error while saving read-only script to database")
 
     def add_project_to_config(self, project):
         try:

@@ -27,7 +27,6 @@ def create_project():
     except KeyError as e:
         return json_response(json_util.dumps({'error': "No '%s' given" % e}))
     try:
-        app.rq_db.create_project_db(project.name)
         app.rq_db.add_project_to_config(project)
     except RqDbAlreadyExistsError as e:
         return json_response((json_util.dumps({'error': str(e)})))
