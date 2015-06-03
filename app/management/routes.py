@@ -106,15 +106,17 @@ def create_request():
     except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': 'No project exists for that key'}))
 
-    dest_project = app.db.projects.find_one({'name': perm_request.destination})
-    sender_project = app.db.projects.find_one({'name': perm_request.sender})
-    if dest_project is None:
+    try:
+        dest_project = app.rq_db.get_project_by_name(perm_request.destination)
+    except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': "Destination '%s' does not exist." % perm_request.destination}))
-    elif dest_project['name'] in sender_project['permissions']:
+    sender_project = app.rq_db.get_project_by_name(perm_request.sender)
+
+    if dest_project['name'] in sender_project['permissions']:
         return json_response(json_util.dumps({'error': "Project '{}' already permissions for destination '{}'.".format(perm_request.sender, perm_request.destination)}))
     elif perm_request.destination == perm_request.sender:
         return json_response(json_util.dumps({'error': "Project cannot request permissions from itself"}))
-    app.db.requests.insert(perm_request.__dict__)
+    app.rq_db.create_permission_request(perm_request)
 
     # TODO: Email requested destination project owner
 

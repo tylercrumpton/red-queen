@@ -42,3 +42,11 @@ class RqDb(object):
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while saving project to config database")
+
+    def create_permission_request(self, request):
+        try:
+            request.type = "request"
+            self.couch_server["rqconfig"].save(request.__dict__)
+        except Exception as e:
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error while saving permission request to config database")
