@@ -82,9 +82,9 @@ def send_message():
 
     # Send the message off to the destinations API:
     try:
-        message_json = message.__dict__
-        app.rq_db.send_message(dest_project['name'], message_json)
-        return json_response(json_util.dumps(message_json))
+        message = message.__dict__
+        app.rq_db.send_message(message)
+        return json_response(json_util.dumps(message))
     except:
         return json_response(json_util.dumps({'error': "Error sending message to CouchDB."}))
 
