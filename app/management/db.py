@@ -1,5 +1,6 @@
 import couchdb
 import logging
+import time
 
 class RqDbAlreadyExistsError(Exception):
     pass
@@ -50,3 +51,31 @@ class RqDb(object):
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while saving permission request to config database")
+
+    def get_perm_request_by_id(self, request_id):
+        try:
+            return self.couch_server["rqconfig"].get(request_id)
+        except Exception as e:
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error while getting permission request from config database")
+
+    def update_perm_request(self, request_id, new_status):
+        try:
+            new_request = dict(self.couch_server["rqconfig"].get(request_id))
+        except Exception as e:
+            self.logger.exception(e)
+            raise RqDbCommunicationError("Unknown error while getting permission request from config database")
+        if new_request is None:
+            raise RqDbCommunicationError("Could not find request with that id")
+
+        new_request['responded'] = int(time.time())
+        new_request['status'] = new_status
+
+        try:
+            self.couch_server["rqconfig"].update(new_request)
+        except couchdb.ResourceConflict:
+            raise RqDbCommunicationError("Permission request resource conflict. Try again.")
+
+        updated_request = self.couch_server["rqconfig"].get(request_id)
+        if updated_request is None:
+            raise RqDbCommunicationError("Could not find the updated request in the database")
