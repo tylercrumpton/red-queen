@@ -48,9 +48,9 @@ def list_projects():
 
 @manage_api.route('/projects/<string:name>', methods=['GET'])
 def get_project(name):
-    project = app.db.projects.find_one({'name': name})
-
-    if project is None:
+    try:
+        project = app.rq_db.get_project_by_name(name)
+    except RqProjectDoesNotExistError:
         return json_response(json_util.dumps({'error': "Project with name '%s' does not exist" % name}))
 
     # Yank out email and key:
