@@ -162,8 +162,7 @@ def resolve_request(request_id):
     if accept:
         perm_request["status"] = 'accepted'
         # Add project to list of permissions:
-        #app.db.projects.update_one({'name': perm_request['sender']},
-        #                           {'$addToSet': {'permissions': perm_request['destination']}})
+        app.rq_db.add_permission_to_project(perm_request['sender'], perm_request['destination'])
     else:
         perm_request["status"] = 'rejected'
 

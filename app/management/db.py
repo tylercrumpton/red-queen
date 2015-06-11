@@ -46,6 +46,15 @@ class RqDb(object):
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while saving project to config database")
 
+    def add_permission_to_project(self, project_name, perm_name):
+        project = self.get_project_by_name(project_name)
+        project['permissions'].append(perm_name)
+
+        try:
+            self.couch_server["rqconfig"][project['_id']] = project
+        except couchdb.ResourceConflict:
+            raise RqDbCommunicationError("Project resource conflict. Try again.")
+
     def create_permission_request(self, request):
         try:
             request.type = "request"
