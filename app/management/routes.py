@@ -166,7 +166,7 @@ def resolve_request(request_id):
     else:
         perm_request["status"] = 'rejected'
 
-    updated_request = app.rq_db.update_perm_request(perm_request.id, perm_request)
+    updated_request = app.rq_db.update_perm_request(perm_request.id, perm_request["status"])
 
     # TODO: Email request sender
 

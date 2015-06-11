@@ -77,7 +77,7 @@ class RqDb(object):
 
     def update_perm_request(self, request_id, new_status):
         try:
-            new_request = dict(self.couch_server["rqconfig"].get(request_id))
+            new_request = self.couch_server["rqconfig"].get(request_id)
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while getting permission request from config database")
@@ -88,10 +88,12 @@ class RqDb(object):
         new_request['status'] = new_status
 
         try:
-            self.couch_server["rqconfig"].update(new_request)
+            self.couch_server["rqconfig"][request_id] = new_request
         except couchdb.ResourceConflict:
             raise RqDbCommunicationError("Permission request resource conflict. Try again.")
 
         updated_request = self.couch_server["rqconfig"].get(request_id)
         if updated_request is None:
             raise RqDbCommunicationError("Could not find the updated request in the database")
+
+        return updated_request
