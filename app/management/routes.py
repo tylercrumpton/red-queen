@@ -2,8 +2,7 @@ from flask import Blueprint, request, make_response
 from app.management.models import RqMessages, RqProjects, RqRequests
 from bson import json_util
 from bson.objectid import ObjectId
-import time
-from db import RqDbAlreadyExistsError, RqDbCommunicationError, RqProjectDoesNotExistError
+from db import RqDbAlreadyExistsError, RqDbCommunicationError, RqProjectDoesNotExistError, RqRequestDoesNotExistError
 import app
 import logging
 
@@ -124,10 +123,12 @@ def create_request():
 
 @manage_api.route('/requests/<string:request_id>', methods=['GET'])
 def get_request(request_id):
-    perm_request = app.db.requests.find_one({'_id': ObjectId(request_id)})
-
-    if perm_request is None:
-        return json_response(json_util.dumps({'error': "Request with id '%s' does not exist" % request_id}))
+    try:
+        perm_request = app.rq_db.get_perm_request_by_id(request_id)
+    except RqRequestDoesNotExistError:
+        return json_response(json_util.dumps({'error': "Request does not exist."}))
+    except RqDbCommunicationError as e:
+        return json_response((json_util.dumps({'error': str(e)})))
 
     return json_response(json_util.dumps(perm_request))
 
@@ -135,6 +136,8 @@ def get_request(request_id):
 def resolve_request(request_id):
     try:
         perm_request = app.rq_db.get_perm_request_by_id(request_id)
+    except RqRequestDoesNotExistError:
+        return json_response(json_util.dumps({'error': "Request does not exist."}))
     except RqDbCommunicationError as e:
         return json_response((json_util.dumps({'error': str(e)})))
 

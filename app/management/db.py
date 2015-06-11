@@ -8,6 +8,8 @@ class RqDbCommunicationError(Exception):
     pass
 class RqProjectDoesNotExistError(Exception):
     pass
+class RqRequestDoesNotExistError(Exception):
+    pass
 
 class RqDb(object):
     def __init__(self, db_host):
@@ -54,10 +56,15 @@ class RqDb(object):
 
     def get_perm_request_by_id(self, request_id):
         try:
-            return self.couch_server["rqconfig"].get(request_id)
+            request = self.couch_server["rqconfig"].get(request_id)
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error while getting permission request from config database")
+
+        if request is None:
+            raise RqRequestDoesNotExistError
+        else:
+            return request
 
     def update_perm_request(self, request_id, new_status):
         try:
