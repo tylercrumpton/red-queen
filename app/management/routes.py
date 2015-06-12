@@ -36,7 +36,7 @@ def create_project():
 
 @manage_api.route('/projects', methods=['GET'])
 def list_projects():
-    project_list = list(app.db.projects.find())
+    project_list = app.rq_db.get_all_projects()
 
     # Yank out emails and keys:
     for project in project_list:

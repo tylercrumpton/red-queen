@@ -31,6 +31,10 @@ class RqDb(object):
         except IndexError:
             raise RqProjectDoesNotExistError("Project with that name does not exist.")
 
+    def get_all_projects(self):
+        view_result = self.couch_server['rqconfig'].view('doc/by_type', key='project')
+        return [project.value for project in list(view_result)]
+
     def send_message(self, message):
         try:
             self.couch_server['rqmessages'].save(message)
