@@ -33,7 +33,7 @@ class RqDb(object):
 
     def send_message(self, message):
         try:
-            self.couch_server['rqprojects'].save(message)
+            self.couch_server['rqmessages'].save(message)
         except Exception as e:
             self.logger.exception(e)
             raise RqDbCommunicationError("Unknown error sending message")
