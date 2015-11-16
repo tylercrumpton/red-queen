@@ -9,8 +9,14 @@ language.
 Example Message
 --------------
 ```
-curl --request POST \
-  --url https://crump.space/rq-dev/api/v1.0/messages \
-  --header 'content-type: application/json' \
-  --data '{\n    "type":"command",\n    "key":"1234567890gggd",\n    "destination":"rqirc",\n    "data":{\n        "channel":"##rqtest",\n        "isaction":false,\n        "message":"test!"\n    }\n}'
+curl -X POST -H "Content-Type: application/json" -d '{
+    "type":"command",
+    "key":"1234567890gggd",
+    "destination":"rqirc",
+    "data":{
+        "channel":"##rqtest",
+        "isaction":false,
+        "message":"I am a message!!"
+    }
+}' 'https://crump.space/rq/api/v1.0/messages'
 ```
